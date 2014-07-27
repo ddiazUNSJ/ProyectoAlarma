@@ -53,11 +53,11 @@ const byte BUT_PIN = 14;
 
 //basado en  http://forum.arduino.cc/index.php/topic,8558.0.html
   // analog button read values
-const int BUTSEL_VAL  = 70;
-const int BUTFWD_VAL  = 250;
-const int BUTREV_VAL  = 450;
-const int BUTDEC_VAL  = 655;
-const int BUTINC_VAL  = 830;
+const int BUTSEL_VAL  = 173;
+const int BUTFWD_VAL  = 320;
+const int BUTREV_VAL  = 733;
+const int BUTDEC_VAL  = 608;
+const int BUTINC_VAL  = 838;
 
 const byte BUT_THRESH  = 60;
 
@@ -71,14 +71,59 @@ int BUT_MAP[5][2] = {
                     };
                             
 
+ 
+ 
+/*
+	//Este es el menu que implemente para hacer la prueba//
+	
+	Cambiar_Clave
+                  Clave
+	Zonas
+		Zona1
+                     Vigilar
+                     No Vigilar                     
+		Zona2
+                     Vigilar
+                     No Vigilar
+	Sensores
+		Sensor1
+                      zona
+                           zona1
+                           zona2
+                      tipo  
+                           apertura
+                           movimiento
+                           humo
+                      estado
+                           On
+                           Off
+		Sensor2
+                      zona
+                           zona1
+                           zona2
+                      tipo  
+                           apertura
+                           movimiento
+                           humo
+                      estado
+                           On
+                           Off
+*/
 
 // ====== Test Menu =========== 
+int clave;
 
 byte foo = 0;
 byte sel = 0;
 unsigned int bar = 1;
 long baz  = 0;
 float bak = 0.0;
+
+byte theseFlags = 0;
+
+ MENU_FLAG    my_flag    = { 3, &theseFlags };
+ MENU_VALUE   my_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&my_flag) };
+ MENU_ITEM    my_item    = { {"Flag Edit"}, ITEM_VALUE, 0, MENU_TARGET(&my_value) };
 
   // Create a list of states and values for a select input
 MENU_SELECT_ITEM  sel_ign = { 2, {"Ignore"} };
@@ -91,6 +136,8 @@ MENU_SELECT_LIST  state_list[] = { &sel_ign, &sel_on, &sel_off };
   
                              // TARGET VAR   LENGTH                          TARGET SELECT LIST
 MENU_SELECT state_select = { &sel,           MENU_SELECT_SIZE(state_list),   MENU_TARGET(&state_list) };
+
+
 
   // values to use 
 
@@ -110,7 +157,7 @@ MENU_ITEM item_state    = { {"Select Input"}, ITEM_VALUE,  0,        MENU_TARGET
 MENU_ITEM item_testme   = { {"Test Action"},  ITEM_ACTION, 0,        MENU_TARGET(uiQwkScreen) };
 
                    //        List of items in menu level
-MENU_LIST root_list[]   = { &item_checkme, &item_barme, &item_bazme, &item_bakme, &item_state, &item_testme };
+MENU_LIST root_list[]   = {  &item_barme, &item_bazme, &item_bakme, &item_state, &item_testme,&item_checkme };
 
                   // Root item is always created last, so we can add all other items to it
 MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list),    MENU_TARGET(&root_list) };

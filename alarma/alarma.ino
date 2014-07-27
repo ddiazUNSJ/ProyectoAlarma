@@ -76,15 +76,18 @@ int BUT_MAP[5][2] = {
 /*
 	//Este es el menu que implemente para hacer la prueba//
 	
-	Cambiar_Clave
+        Armar Sistema
+                     On 
+                     Off   
+	Cambiar Clave
                   Clave
-	Zonas
+	Estado de Zonas
 		Zona1
-                     Vigilar
-                     No Vigilar                     
+                     On (es Vigilar)
+                     Off (es No Vigilar)                     
 		Zona2
-                     Vigilar
-                     No Vigilar
+                     On
+                     Off
 	Sensores
 		Sensor1
                       zona
@@ -98,7 +101,7 @@ int BUT_MAP[5][2] = {
                            On
                            Off
 		Sensor2
-                      zona
+                      zona Asignada
                            zona1
                            zona2
                       tipo  
@@ -111,7 +114,6 @@ int BUT_MAP[5][2] = {
 */
 
 // ====== Test Menu =========== 
-int clave;
 
 byte foo = 0;
 byte sel = 0;
@@ -119,52 +121,101 @@ unsigned int bar = 1;
 long baz  = 0;
 float bak = 0.0;
 
-byte theseFlags = 0;
+byte estadoAlarma = 0;
+//--SubMenu Armar Sistema
+ MENU_FLAG    armar_flag    = { 3, &estadoAlarma };
+ MENU_VALUE   armar_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&armar_flag) };
+ MENU_ITEM    item_armar    = { {"Armar Sistema"}, ITEM_VALUE, 0, MENU_TARGET(&armar_value) };
 
- MENU_FLAG    my_flag    = { 3, &theseFlags };
- MENU_VALUE   my_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&my_flag) };
- MENU_ITEM    my_item    = { {"Flag Edit"}, ITEM_VALUE, 0, MENU_TARGET(&my_value) };
+//--SubMenu Cambiar Password
+int clave;
+MENU_VALUE clave_value = { TYPE_UINT,       9999, 1000,   MENU_TARGET(&clave) };
+MENU_ITEM item_clave    = { {"Cambiar Clave"}, ITEM_VALUE,  0, MENU_TARGET(&clave_value) };
 
-  // Create a list of states and values for a select input
-MENU_SELECT_ITEM  sel_ign = { 2, {"Ignore"} };
-MENU_SELECT_ITEM  sel_on  = { 1, {"On"} };
-MENU_SELECT_ITEM  sel_off = { 0, {"Off"} };
+//--SubMenu Estado de zonas
+byte estadoZonas=0;
+ //zona1 
+ MENU_FLAG    zona1_flag    = { 1, &estadoZonas };
+ MENU_VALUE   zona1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona1_flag) };
+ MENU_ITEM    item_zona1    = { {"Zona1"}, ITEM_VALUE, 0, MENU_TARGET(&zona1_value) };
+ //zona2 
+ MENU_FLAG    zona2_flag    = { 2, &estadoZonas };
+ MENU_VALUE   zona2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona2_flag) };
+ MENU_ITEM    item_zona2    = { {"Zona2"}, ITEM_VALUE, 0, MENU_TARGET(&zona2_value) };
+ 
+ //Armando subMenus Estado de Zonas
+ MENU_LIST zonas_list[]   = {  &item_zona1, &item_zona2 };
+ MENU_ITEM menu_estado_zonas     = { {"Estado Zonas"}, ITEM_MENU,   MENU_SIZE(zonas_list),    MENU_TARGET(&zonas_list) };
 
-MENU_SELECT_LIST  state_list[] = { &sel_ign, &sel_on, &sel_off };
-                                  
-  // the special target for our state input
-  
-                             // TARGET VAR   LENGTH                          TARGET SELECT LIST
-MENU_SELECT state_select = { &sel,           MENU_SELECT_SIZE(state_list),   MENU_TARGET(&state_list) };
+//subMenu Sensores
+//------Zona Asignada
+        byte zonaAsigS1;
+        byte zonaAsigS2;
+        // Lista de zonas posibles
+        MENU_SELECT_ITEM  opc_zona1 = { 1, {"Zona1"} };
+        MENU_SELECT_ITEM  opc_zona2  = { 2, {"Zona2" };
+        
+        MENU_SELECT_LIST  tipos_de_zonas[] = { &opc_zona1, &opc_zona2 };
+                                          
+        MENU_SELECT zona_S1_sel = { &zonaAsigS1,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
+        MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel) };
+        MENU_ITEM item_zona_S1    = { {"Zona para S1"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S1_value) };
+
+        MENU_SELECT zona_S2_sel = { &zonaAsigS2,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
+        MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel) };
+        MENU_ITEM item_zona_S2    = { {"Zona para S2"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S2_value) };
+       
+        
+        
+//------Tipos de sensores
+        byte tipoS1;
+        byte tipoS2;
+        // Lista de tipos de sensores posibles
+        MENU_SELECT_ITEM  opc_aper = { 2, {"Apertura"} };
+        MENU_SELECT_ITEM  opc_mov  = { 1, {"Movimiento"} };
+        MENU_SELECT_ITEM  opc_humo= { 0, {"Humo"} };
+        
+        MENU_SELECT_LIST  tipos_de_sensores[] = { &opc_aper, &opc_mov, &opc_humo };
+                                          
+        MENU_SELECT tipo_S1_sel = { &tipoS1,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
+        MENU_VALUE tipo_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S1_sel) };
+        MENU_ITEM item_tipo_S1    = { {"Tipo Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S1_value) };
+
+        
+        MENU_SELECT tipo_S2_sel = { &tipoS2,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
+        MENU_VALUE tipo_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S2_sel) };
+        MENU_ITEM item_tipo_S2    = { {"Tipo Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S2_value) };
+
+//-----Estados
+       byte estadoSensores=0;
+       //Estado Sensor 1 
+       MENU_FLAG    estado_S1_flag    = { 1, &estadoSensores };
+       MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag) };
+       MENU_ITEM    item_estado_S1    = { {"estado S1"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S1_value) };
+      
+      //Estado Sensor 2 
+       MENU_FLAG    estado_S2_flag    = { 2, &estadoSensores };
+       MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag) };
+       MENU_ITEM    item_estado_S2    = { {"estado S2"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S2_value) };
 
 
+//-----Arma submenus
+//                Sensores
+//                   Sensor1
+//                   Sensor2
+ MENU_LIST sensor1_list[]   = {  &item_zona_S1, &item_tipo_S1, &item_estado_S1 };
+ MENU_ITEM item_sensor1     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
 
-  // values to use 
+ MENU_LIST sensor2_list[]   = {  &item_zona_S2, &item_tipo_S2, &item_estado_S2 };
+ MENU_ITEM item_sensor1     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };
 
-                    //    TYPE            MAX    MIN    TARGET 
-MENU_VALUE foo_value = { TYPE_BYTE,       100,   0,     MENU_TARGET(&foo) };
-MENU_VALUE bar_value = { TYPE_UINT,       10000, 100,   MENU_TARGET(&bar) };
-MENU_VALUE baz_value = { TYPE_LONG,       10000, 1,     MENU_TARGET(&baz) };
-MENU_VALUE bak_value = { TYPE_FLOAT_1000, 0,     0,     MENU_TARGET(&bak) };
-MENU_VALUE sel_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&state_select) };
+ MENU_LIST sensores_list[]   = {  &item_sensor1, &item_sensor2 };
+ MENU_ITEM menu_sensores     = { {"Sensores"}, ITEM_MENU,   MENU_SIZE(sensores_list),    MENU_TARGET(&sensores_list) };
 
-                    //        LABEL           TYPE        LENGTH    TARGET
-MENU_ITEM item_checkme  = { {"Byte Edit"},    ITEM_VALUE,  0,        MENU_TARGET(&foo_value) };
-MENU_ITEM item_barme    = { {"UInt Edit"},     ITEM_VALUE,  0,        MENU_TARGET(&bar_value) };
-MENU_ITEM item_bazme    = { {"Long Edit"},    ITEM_VALUE,  0,        MENU_TARGET(&baz_value) };
-MENU_ITEM item_bakme    = { {"Float Edit"},   ITEM_VALUE,  0,        MENU_TARGET(&bak_value) };
-MENU_ITEM item_state    = { {"Select Input"}, ITEM_VALUE,  0,        MENU_TARGET(&sel_value) };
-MENU_ITEM item_testme   = { {"Test Action"},  ITEM_ACTION, 0,        MENU_TARGET(uiQwkScreen) };
 
-                   //        List of items in menu level
-MENU_LIST root_list[]   = {  &item_barme, &item_bazme, &item_bakme, &item_state, &item_testme,&item_checkme };
-
-                  // Root item is always created last, so we can add all other items to it
+MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
 MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list),    MENU_TARGET(&root_list) };
 
-
- // initialize LCD object
-//LiquidCrystal lcd(LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
 OMMenuMgr Menu(&menu_root);
 

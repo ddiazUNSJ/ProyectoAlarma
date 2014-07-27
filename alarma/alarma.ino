@@ -159,11 +159,11 @@ byte estadoZonas=0;
                                           
         MENU_SELECT zona_S1_sel = { &zonaAsigS1,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
         MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel) };
-        MENU_ITEM item_zona_S1    = { {"Zona para S1"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S1_value) };
+        MENU_ITEM item_zona_S1    = { {"Zona Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S1_value) };
 
         MENU_SELECT zona_S2_sel = { &zonaAsigS2,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
         MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel) };
-        MENU_ITEM item_zona_S2    = { {"Zona para S2"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S2_value) };
+        MENU_ITEM item_zona_S2    = { {"Zona Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S2_value) };
        
         
         
@@ -191,12 +191,12 @@ byte estadoZonas=0;
        //Estado Sensor 1 
        MENU_FLAG    estado_S1_flag    = { 1, &estadoSensores };
        MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag) };
-       MENU_ITEM    item_estado_S1    = { {"estado S1"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S1_value) };
+       MENU_ITEM    item_estado_S1    = { {"estado Sensor 1"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S1_value) };
       
       //Estado Sensor 2 
        MENU_FLAG    estado_S2_flag    = { 2, &estadoSensores };
        MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag) };
-       MENU_ITEM    item_estado_S2    = { {"estado S2"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S2_value) };
+       MENU_ITEM    item_estado_S2    = { {"estado Sensor 2"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S2_value) };
 
 
 //-----Arma submenus
@@ -204,7 +204,7 @@ byte estadoZonas=0;
 //                   Sensor1
 //                   Sensor2
  MENU_LIST sensor1_list[]   = {  &item_zona_S1, &item_tipo_S1, &item_estado_S1 };
- MENU_ITEM item_sensor1     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
+ MENU_ITEM item_sensor1     = { {"Sensor 1"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
 
  MENU_LIST sensor2_list[]   = {  &item_zona_S2, &item_tipo_S2, &item_estado_S2 };
  MENU_ITEM item_sensor2     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };

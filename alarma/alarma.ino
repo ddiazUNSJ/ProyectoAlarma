@@ -28,24 +28,6 @@
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I2C address
 
-
-
- // ui setup
- 
- // ui setup
- 
-    // lcd pins
-//const byte LCD_RS  = 17;
-//const byte LCD_EN  = 18;
-//const byte LCD_D4  = 11;
-//const byte LCD_D5  = 8;
-//const byte LCD_D6  = 7;
-//const byte LCD_D7  = 4;
-//
-//
-//const byte LCD_ROWS = 2;
-//const byte LCD_COLS = 16;
-
  // button values
  
  // which input is our button
@@ -113,44 +95,41 @@ int BUT_MAP[5][2] = {
                            Off
 */
 
-// ====== Test Menu =========== 
-
-byte foo = 0;
-byte sel = 0;
-unsigned int bar = 1;
-long baz  = 0;
-float bak = 0.0;
-
 byte estadoAlarma = 0;
+const int EEPROM_estadoAlarma       = 1;
 //--SubMenu Armar Sistema
  MENU_FLAG    armar_flag    = { 3, &estadoAlarma };
- MENU_VALUE   armar_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&armar_flag) };
+ MENU_VALUE   armar_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&armar_flag), EEPROM_estadoAlarma };
  MENU_ITEM    item_armar    = { {"Armar Sistema"}, ITEM_VALUE, 0, MENU_TARGET(&armar_value) };
 
 //--SubMenu Cambiar Password
 int clave;
-MENU_VALUE clave_value = { TYPE_UINT,       9999, 1000,   MENU_TARGET(&clave) };
+const int EEPROM_clave       = 2;
+MENU_VALUE clave_value = { TYPE_UINT,       9999, 1000,   MENU_TARGET(&clave),EEPROM_clave  };
 MENU_ITEM item_clave    = { {"Cambiar Clave"}, ITEM_VALUE,  0, MENU_TARGET(&clave_value) };
 
 //--SubMenu Estado de zonas
 byte estadoZonas=0;
+const int EEPROM_estadoZonas       = 4;
  //zona1 
  MENU_FLAG    zona1_flag    = { 1, &estadoZonas };
- MENU_VALUE   zona1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona1_flag) };
+ MENU_VALUE   zona1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona1_flag), EEPROM_estadoZonas  };
  MENU_ITEM    item_zona1    = { {"Zona1"}, ITEM_VALUE, 0, MENU_TARGET(&zona1_value) };
  //zona2 
  MENU_FLAG    zona2_flag    = { 2, &estadoZonas };
- MENU_VALUE   zona2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona2_flag) };
- MENU_ITEM    item_zona2    = { {"Zona2"}, ITEM_VALUE, 0, MENU_TARGET(&zona2_value) };
+ MENU_VALUE   zona2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona2_flag), EEPROM_estadoZonas  };
+ MENU_ITEM    item_zona2    = { {"Zona2"}, ITEM_VALUE, 0, MENU_TARGET(&zona2_value)  };
  
  //Armando subMenus Estado de Zonas
  MENU_LIST zonas_list[]   = {  &item_zona1, &item_zona2 };
  MENU_ITEM menu_estado_zonas     = { {"Estado Zonas"}, ITEM_MENU,   MENU_SIZE(zonas_list),    MENU_TARGET(&zonas_list) };
 
-//subMenu Sensores
-//------Zona Asignada
+//--subMenu Sensores
+        //------Zona Asignada
         byte zonaAsigS1;
+        const int EEPROM_zonaAsigS1       = 5;
         byte zonaAsigS2;
+        const int EEPROM_zonaAsigS2       = 6;
         // Lista de zonas posibles
         MENU_SELECT_ITEM  opc_zona1 = { 1, {"Zona1"} };
         MENU_SELECT_ITEM  opc_zona2  = { 2, {"Zona2"} };
@@ -158,18 +137,22 @@ byte estadoZonas=0;
         MENU_SELECT_LIST  tipos_de_zonas[] = { &opc_zona1, &opc_zona2 };
                                           
         MENU_SELECT zona_S1_sel = { &zonaAsigS1,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
-        MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel) };
+        MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel),EEPROM_zonaAsigS1  };
         MENU_ITEM item_zona_S1    = { {"Zona Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S1_value) };
 
         MENU_SELECT zona_S2_sel = { &zonaAsigS2,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
-        MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel) };
+        MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel), EEPROM_zonaAsigS2  };
         MENU_ITEM item_zona_S2    = { {"Zona Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S2_value) };
        
         
         
-//------Tipos de sensores
+        //------Tipos de sensores
         byte tipoS1;
+        const int EEPROM_tipoS1       = 7;
+  
         byte tipoS2;
+        const int EEPROM_tipoS2       = 8;
+  
         // Lista de tipos de sensores posibles
         MENU_SELECT_ITEM  opc_aper = { 2, {"Apertura"} };
         MENU_SELECT_ITEM  opc_mov  = { 1, {"Movimiento"} };
@@ -178,41 +161,43 @@ byte estadoZonas=0;
         MENU_SELECT_LIST  tipos_de_sensores[] = { &opc_aper, &opc_mov, &opc_humo };
                                           
         MENU_SELECT tipo_S1_sel = { &tipoS1,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
-        MENU_VALUE tipo_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S1_sel) };
+        MENU_VALUE tipo_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S1_sel), EEPROM_tipoS1 };
         MENU_ITEM item_tipo_S1    = { {"Tipo Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S1_value) };
 
         
         MENU_SELECT tipo_S2_sel = { &tipoS2,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
-        MENU_VALUE tipo_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S2_sel) };
+        MENU_VALUE tipo_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S2_sel), EEPROM_tipoS2 };
         MENU_ITEM item_tipo_S2    = { {"Tipo Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S2_value) };
 
-//-----Estados
+       //-----Estados
        byte estadoSensores=0;
+       const int EEPROM_estadoSensores     = 9;
+  
        //Estado Sensor 1 
        MENU_FLAG    estado_S1_flag    = { 1, &estadoSensores };
-       MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag) };
+       MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag), EEPROM_estadoSensores };
        MENU_ITEM    item_estado_S1    = { {"estado Sensor 1"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S1_value) };
       
       //Estado Sensor 2 
        MENU_FLAG    estado_S2_flag    = { 2, &estadoSensores };
-       MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag) };
+       MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag), EEPROM_estadoSensores };
        MENU_ITEM    item_estado_S2    = { {"estado Sensor 2"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S2_value) };
 
 
-//-----Arma submenus
-//                Sensores
-//                   Sensor1
-//                   Sensor2
- MENU_LIST sensor1_list[]   = {  &item_zona_S1, &item_tipo_S1, &item_estado_S1 };
- MENU_ITEM item_sensor1     = { {"Sensor 1"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
+      //-----Arma submenus sensores
+      //                Sensores
+      //                   Sensor1
+      //                   Sensor2
+       MENU_LIST sensor1_list[]   = {  &item_zona_S1, &item_tipo_S1, &item_estado_S1 };
+       MENU_ITEM item_sensor1     = { {"Sensor 1"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
+      
+       MENU_LIST sensor2_list[]   = {  &item_zona_S2, &item_tipo_S2, &item_estado_S2 };
+       MENU_ITEM item_sensor2     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };
+      
+       MENU_LIST sensores_list[]   = {  &item_sensor1, &item_sensor2 };
+       MENU_ITEM menu_sensores     = { {"Sensores"}, ITEM_MENU,   MENU_SIZE(sensores_list),    MENU_TARGET(&sensores_list) };
 
- MENU_LIST sensor2_list[]   = {  &item_zona_S2, &item_tipo_S2, &item_estado_S2 };
- MENU_ITEM item_sensor2     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };
-
- MENU_LIST sensores_list[]   = {  &item_sensor1, &item_sensor2 };
- MENU_ITEM menu_sensores     = { {"Sensores"}, ITEM_MENU,   MENU_SIZE(sensores_list),    MENU_TARGET(&sensores_list) };
-
-
+//--Menu Principal
 MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
 MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list),    MENU_TARGET(&root_list) };
 
@@ -223,7 +208,18 @@ OMMenuMgr Menu(&menu_root);
 
 void setup() {
 
-  Serial.begin(9600);  // Used to type in characters
+  // recupera valores ante una perdida de energia del dispositivo
+   OMEEPROM::read(EEPROM_estadoAlarma, estadoAlarma); // inicializa estado de la alarma
+   OMEEPROM::read(EEPROM_clave, clave); // inicializa contraseña actual alarma
+   OMEEPROM::read(EEPROM_estadoZonas, estadoZonas); // inicializa estado de las zonas
+   OMEEPROM::read(EEPROM_zonaAsigS1, zonaAsigS1); // inicializa zona asignada a sensor 1
+   OMEEPROM::read(EEPROM_zonaAsigS2, zonaAsigS2); // inicializa zona asignada a sensor 2
+   OMEEPROM::read(EEPROM_tipoS1, tipoS1); // inicializa tipo asignado a sensor 1
+   OMEEPROM::read(EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
+   OMEEPROM::read(EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
+ 
+  
+   Serial.begin(9600);  // Used to type in characters
   //------- LCD Settings
    lcd.begin(16,2);   // initialize the lcd for 16 chars 2 lines, turn on backlight
 
@@ -286,19 +282,19 @@ void uiClear() {
 }
 
 
-void uiQwkScreen() {
-  lcd.clear();
-  Menu.enable(false);
-  
-  lcd.print("Action!");
-  lcd.setCursor(0, 1);
-  lcd.print("Enter 2 return");
-  
-  while( Menu.checkInput() != BUTTON_SELECT ) {
-    ; // wait!
-  }
-  
-  Menu.enable(true);
-  lcd.clear();
-}  
+//void uiQwkScreen() {
+//  lcd.clear();
+//  Menu.enable(false);
+//  
+//  lcd.print("Action!");
+//  lcd.setCursor(0, 1);
+//  lcd.print("Enter 2 return");
+//  
+//  while( Menu.checkInput() != BUTTON_SELECT ) {
+//    ; // wait!
+//  }
+//  
+//  Menu.enable(true);
+//  lcd.clear();
+//}  
 

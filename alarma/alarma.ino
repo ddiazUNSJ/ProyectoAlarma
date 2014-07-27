@@ -10,13 +10,11 @@
 #include "OMEEPROM.h"
 #include "OMMenuMgr.h"
 #include <LiquidCrystal_I2C.h>
-
-//#include <LiquidCrystal.h>
 #include <Wire.h>  // Comes with Arduino IDE
-//#include <Keypad.h>
-//#include <Password.h>
-//#include <avr/io.h>
-//#include <avr/interrupt.h>
+#include <Keypad.h>
+#include <Password.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 // #include <MenuBackend.h>
 
 
@@ -28,33 +26,30 @@
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I2C address
 
+//------------------Menu variables-----------------------------------//
+//-------------------------------------------------------------------//
  // button values
- 
  // which input is our button
-const byte BUT_PIN = 14;
-
-//basado en  http://forum.arduino.cc/index.php/topic,8558.0.html
-  // analog button read values
-const int BUTSEL_VAL  = 173;
-const int BUTFWD_VAL  = 320;
-const int BUTREV_VAL  = 733;
-const int BUTDEC_VAL  = 608;
-const int BUTINC_VAL  = 838;
-
-const byte BUT_THRESH  = 60;
-
-  // mapping of analog button values for menu
-int BUT_MAP[5][2] = {
-                         {BUTFWD_VAL, BUTTON_FORWARD}, 
-                         {BUTINC_VAL, BUTTON_INCREASE}, 
-                         {BUTDEC_VAL, BUTTON_DECREASE}, 
-                         {BUTREV_VAL, BUTTON_BACK}, 
-                         {BUTSEL_VAL, BUTTON_SELECT} 
-                    };
-                            
-
- 
- 
+    const byte BUT_PIN = 14;
+    
+    //basado en  http://forum.arduino.cc/index.php/topic,8558.0.html
+      // analog button read values
+    const int BUTSEL_VAL  = 173;
+    const int BUTFWD_VAL  = 320;
+    const int BUTREV_VAL  = 733;
+    const int BUTDEC_VAL  = 608;
+    const int BUTINC_VAL  = 838;
+    
+    const byte BUT_THRESH  = 60;
+    
+      // mapping of analog button values for menu
+    int BUT_MAP[5][2] = {
+                             {BUTFWD_VAL, BUTTON_FORWARD}, 
+                             {BUTINC_VAL, BUTTON_INCREASE}, 
+                             {BUTDEC_VAL, BUTTON_DECREASE}, 
+                             {BUTREV_VAL, BUTTON_BACK}, 
+                             {BUTSEL_VAL, BUTTON_SELECT} 
+                        };
 /*
 	//Este es el menu que implemente para hacer la prueba//
 	
@@ -204,8 +199,175 @@ MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list), 
 
 OMMenuMgr Menu(&menu_root);
 
+//------------------Menu  Functions-----------------------------------//  
+//      void testAction() {
+//      
+//       digitalWrite(5, HIGH);  
+//      }
+//      
+      
+      void uiDraw(char* p_text, int p_row, int p_col, int len) {
+        lcd.setCursor(p_col, p_row);
+        
+        for( int i = 0; i < len; i++ ) {
+          if( p_text[i] < '!' || p_text[i] > '~' )
+            lcd.write(' ');
+          else  
+            lcd.write(p_text[i]);
+        }
+      }
+      
+      
+      void uiClear() {
+        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Enter for Menu");
+      }
+      
+      
+      //void uiQwkScreen() {
+      //  lcd.clear();
+      //  Menu.enable(false);
+      //  
+      //  lcd.print("Action!");
+      //  lcd.setCursor(0, 1);
+      //  lcd.print("Enter 2 return");
+      //  
+      //  while( Menu.checkInput() != BUTTON_SELECT ) {
+      //    ; // wait!
+      //  }
+      //  
+      //  Menu.enable(true);
+      //  lcd.clear();
+      //}  
+//------------------Password  variables-----------------------------------//
+//----------------------------------------------------------------------//
+
+     volatile int seconds;
+     volatile int count=0;
+     volatile boolean enabledMenu;	
+     #define LEDPIN 13 
+     Password password = Password( "1234" );
+//------------------Password  Functions-----------------------------------//     
+        //---------------------------------------
+        boolean passwordIsValid(){
+         return enabledMenu;
+        }
+        //---------------------------------------
+        void checkPassword(){
+          if (password.evaluate()){
+            Serial.println("Entrando al sistema");
+            lcd.clear();
+            lcd.print("Password Correcto ");
+            lcd.setCursor(0,1);
+            lcd.print("Menu operable");
+            enabledMenu = true;
+            digitalWrite(LEDPIN,HIGH);
+            seconds=20;
+            password.reset();
+            //Add code to run if it works
+          }else{
+            Serial.print("Wrong-> ");
+             Serial.println(password.getGuess());
+             password.reset();
+             lcd.clear();
+             lcd.print("password invalido");
+        //
+            //add code to run if it did not work
+          }
+        }
+
+//------------------Keypad  variables-----------------------------------//
+//----------------------------------------------------------------------//
+    // keypad type definition
+    const byte ROWS = 4; //four rows
+    const byte COLS = 4; //three columns
+    char keys[ROWS][COLS] =
+     {{'A','3','2','1'},
+      {'B','6','5','4'},
+      {'C','9','8','7'},
+      {'D','#','0','*'}};
+    byte rowPins[ROWS] = {
+      5, 4, 3, 2}; //connect used to the row pinouts of the keypad
+    byte colPins[COLS] = {
+      9, 8, 7, 6}; // connect to the column pinouts of the keypad
+    
+    Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+    
+//------------------Keypad  Functions for validation password-----------------------------------//  
+    void keypadEvent(KeypadEvent eKey){
+          switch (keypad.getState()){
+            case PRESSED:
+        	Serial.print("Pressed: ");
+        	Serial.println(eKey);
+                Serial.print("Contador: ");Serial.println(count);
+               
+               if (!enabledMenu)
+                {
+                 
+                  Serial.print("Entrando a enabledMenu : ");
+                  Serial.print(eKey);
+        	switch (eKey){
+        	  case '*': checkPassword(); break;
+        	  case '#': password.reset(); break;
+        	  default: password.append(eKey);
+                 }
+                   if (count==0){ 
+                      lcd.clear();
+                      lcd.print("Menu No Activo");
+                      lcd.setCursor(0,1);
+//                      lcd.setCursor(0,1);
+//                      lcd.print("                ");
+//                      lcd.setCursor(0,1);
+                      }
+                   lcd.print(eKey);
+                   count++;
+                   if ((count >4)&&(!enabledMenu) ){
+                      password.reset();
+                      lcd.clear();
+                      count=0;
+                      lcd.print("Password Invalido");
+                      lcd.setCursor(0,1);
+                      lcd.print("Intente nuevamente");
+                     }
+                 }
+                else
+                 {
+                  lcd.clear();
+                  lcd.print("el tiempo corre");
+                  }
+            }//Fin de switch
+        }
 
 
+        
+        
+//------------------Active Menu Time Function-----------------------------------//
+//----------------------------------------------------------------------//        
+        
+        //------ Interrupt Service Routine used to count the active menu time 
+        ISR(TIMER1_COMPA_vect)
+        {
+          //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
+          seconds--;
+          if (seconds < -10) seconds=-1;
+             Serial.print("second:");     Serial.println(seconds);
+          if ( seconds == 0 )
+            {
+                enabledMenu = false;
+                sei();
+                lcd.clear();
+                lcd.print("Menu No Activo");
+                lcd.setCursor(0,1);
+                lcd.print("Ingrese password");
+                count=0;
+                cli();
+                     
+              }  
+         }
+  
+        
 void setup() {
 
   // recupera valores ante una perdida de energia del dispositivo
@@ -256,45 +418,8 @@ void loop() {
  
 }
 
-void testAction() {
-
- digitalWrite(5, HIGH);  
-}
 
 
-void uiDraw(char* p_text, int p_row, int p_col, int len) {
-  lcd.setCursor(p_col, p_row);
-  
-  for( int i = 0; i < len; i++ ) {
-    if( p_text[i] < '!' || p_text[i] > '~' )
-      lcd.write(' ');
-    else  
-      lcd.write(p_text[i]);
-  }
-}
 
-
-void uiClear() {
-  
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Enter for Menu");
-}
-
-
-//void uiQwkScreen() {
-//  lcd.clear();
-//  Menu.enable(false);
-//  
-//  lcd.print("Action!");
-//  lcd.setCursor(0, 1);
-//  lcd.print("Enter 2 return");
-//  
-//  while( Menu.checkInput() != BUTTON_SELECT ) {
-//    ; // wait!
-//  }
-//  
-//  Menu.enable(true);
-//  lcd.clear();
-//}  
-
+//------ Password Validation Functions
+   

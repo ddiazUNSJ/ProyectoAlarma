@@ -153,7 +153,7 @@ byte estadoZonas=0;
         byte zonaAsigS2;
         // Lista de zonas posibles
         MENU_SELECT_ITEM  opc_zona1 = { 1, {"Zona1"} };
-        MENU_SELECT_ITEM  opc_zona2  = { 2, {"Zona2" };
+        MENU_SELECT_ITEM  opc_zona2  = { 2, {"Zona2"} };
         
         MENU_SELECT_LIST  tipos_de_zonas[] = { &opc_zona1, &opc_zona2 };
                                           
@@ -207,7 +207,7 @@ byte estadoZonas=0;
  MENU_ITEM item_sensor1     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor1_list),    MENU_TARGET(&sensor1_list) };
 
  MENU_LIST sensor2_list[]   = {  &item_zona_S2, &item_tipo_S2, &item_estado_S2 };
- MENU_ITEM item_sensor1     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };
+ MENU_ITEM item_sensor2     = { {"Sensor 2"}, ITEM_MENU,   MENU_SIZE(sensor2_list),    MENU_TARGET(&sensor2_list) };
 
  MENU_LIST sensores_list[]   = {  &item_sensor1, &item_sensor2 };
  MENU_ITEM menu_sensores     = { {"Sensores"}, ITEM_MENU,   MENU_SIZE(sensores_list),    MENU_TARGET(&sensores_list) };

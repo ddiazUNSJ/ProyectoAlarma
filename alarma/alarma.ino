@@ -263,6 +263,8 @@ OMMenuMgr Menu(&menu_root);
             lcd.setCursor(0,1);
             lcd.print("Menu operable");
             enabledMenu = true;
+            lcd.clear();
+            Menu.enable(true);
             digitalWrite(LEDPIN,HIGH);
             seconds=20;
             password.reset();
@@ -355,6 +357,7 @@ OMMenuMgr Menu(&menu_root);
              Serial.print("second:");     Serial.println(seconds);
           if ( seconds == 0 )
             {
+                Menu.enable(false);
                 enabledMenu = false;
                 sei();
                 lcd.clear();
@@ -380,8 +383,12 @@ void setup() {
    OMEEPROM::read(EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
    OMEEPROM::read(EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
  
-  
+   seconds=20;
    Serial.begin(9600);  // Used to type in characters
+   keypad.addEventListener(keypadEvent); //add an event listener for this keypad
+
+  
+ 
   //------- LCD Settings
    lcd.begin(16,2);   // initialize the lcd for 16 chars 2 lines, turn on backlight
 
@@ -401,6 +408,27 @@ void setup() {
     lcd.print("Iniciando");
     delay(1000);
 
+   //------ Interruptions Settings
+        pinMode(LEDPIN, OUTPUT);
+     
+        // initialize Timer1
+        cli();          // disable global interrupts
+        TCCR1A = 0;     // set entire TCCR1A register to 0
+        TCCR1B = 0;     // same for TCCR1B
+     
+        // set compare match register to desired timer count:
+        OCR1A = 15624;
+        // turn on CTC mode:
+        TCCR1B |= (1 << WGM12);
+        // Set CS10 and CS12 bits for 1024 prescaler:
+        TCCR1B |= (1 << CS10);
+        TCCR1B |= (1 << CS12);
+        // enable timer compare interrupt:
+        TIMSK1 |= (1 << OCIE1A);
+      //    attachInterrupt(0, activarMenu, CHANGE); // attach ISR 
+        // enable global interrupts:
+        sei();      // enable global interrupts
+
   
   
   uiClear();
@@ -415,6 +443,7 @@ void setup() {
 
 void loop() {
  Menu.checkInput();
+ keypad.getKey();
  
 }
 

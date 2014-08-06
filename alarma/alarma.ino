@@ -266,7 +266,7 @@ OMMenuMgr Menu(&menu_root);
             lcd.clear();
             Menu.enable(true);
             digitalWrite(LEDPIN,HIGH);
-            seconds=20;
+            seconds=120;
             password.reset();
             //Add code to run if it works
           }else{
@@ -383,7 +383,7 @@ void setup() {
    OMEEPROM::read(EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
    OMEEPROM::read(EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
  
-   seconds=20;
+   seconds=120;
    Serial.begin(9600);  // Used to type in characters
    keypad.addEventListener(keypadEvent); //add an event listener for this keypad
 

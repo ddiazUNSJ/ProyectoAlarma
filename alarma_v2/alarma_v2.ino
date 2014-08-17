@@ -16,18 +16,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 // #include <MenuBackend.h>
-//#define DEBUG;
-#define ARMAR;
 
-#ifdef DEBUG
-  #define DEBUG_PRINT(x)     Serial.print (x)
-  #define DEBUG_PRINTDEC(x)     Serial.print (x, DEC)
-  #define DEBUG_PRINTLN(x)  Serial.println (x)
-#else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTDEC(x)
-  #define DEBUG_PRINTLN(x) 
-#endif
 
 
 /*-----( Declare Constants )-----*/
@@ -61,7 +50,6 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
                              {BUTREV_VAL, BUTTON_BACK}, 
                              {BUTSEL_VAL, BUTTON_SELECT} 
                         };
-
 /*
 	//Este es el menu que implemente para hacer la prueba//
 	
@@ -102,32 +90,29 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
                            Off
 */
 
-
 byte estadoAlarma = 0;
-#ifdef ARMAR
-const int pos_EEPROM_estadoAlarma       = 1;
+const int EEPROM_estadoAlarma       = 1;
 //--SubMenu Armar Sistema
  MENU_FLAG    armar_flag    = { 3, &estadoAlarma };
- MENU_VALUE   armar_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&armar_flag), pos_EEPROM_estadoAlarma };
+ MENU_VALUE   armar_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&armar_flag), EEPROM_estadoAlarma };
  MENU_ITEM    item_armar    = { {"Armar Sistema"}, ITEM_VALUE, 0, MENU_TARGET(&armar_value) };
-#endif
 
 //--SubMenu Cambiar Password
 int clave;
-const int pos_EEPROM_clave       = 2;
-MENU_VALUE clave_value = { TYPE_UINT,       9999, 1000,   MENU_TARGET(&clave),pos_EEPROM_clave  };
+const int EEPROM_clave       = 2;
+MENU_VALUE clave_value = { TYPE_UINT,       9999, 1000,   MENU_TARGET(&clave),EEPROM_clave  };
 MENU_ITEM item_clave    = { {"Cambiar Clave"}, ITEM_VALUE,  0, MENU_TARGET(&clave_value) };
 
 //--SubMenu Estado de zonas
 byte estadoZonas=0;
-const int pos_EEPROM_estadoZonas       = 4;
+const int EEPROM_estadoZonas       = 4;
  //zona1 
  MENU_FLAG    zona1_flag    = { 1, &estadoZonas };
- MENU_VALUE   zona1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona1_flag), pos_EEPROM_estadoZonas  };
+ MENU_VALUE   zona1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona1_flag), EEPROM_estadoZonas  };
  MENU_ITEM    item_zona1    = { {"Zona1"}, ITEM_VALUE, 0, MENU_TARGET(&zona1_value) };
  //zona2 
  MENU_FLAG    zona2_flag    = { 2, &estadoZonas };
- MENU_VALUE   zona2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona2_flag), pos_EEPROM_estadoZonas  };
+ MENU_VALUE   zona2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&zona2_flag), EEPROM_estadoZonas  };
  MENU_ITEM    item_zona2    = { {"Zona2"}, ITEM_VALUE, 0, MENU_TARGET(&zona2_value)  };
  
  //Armando subMenus Estado de Zonas
@@ -137,9 +122,9 @@ const int pos_EEPROM_estadoZonas       = 4;
 //--subMenu Sensores
         //------Zona Asignada
         byte zonaAsigS1;
-        const int pos_EEPROM_zonaAsigS1       = 5;
+        const int EEPROM_zonaAsigS1       = 5;
         byte zonaAsigS2;
-        const int pos_EEPROM_zonaAsigS2       = 6;
+        const int EEPROM_zonaAsigS2       = 6;
         // Lista de zonas posibles
         MENU_SELECT_ITEM  opc_zona1 = { 1, {"Zona1"} };
         MENU_SELECT_ITEM  opc_zona2  = { 2, {"Zona2"} };
@@ -147,21 +132,21 @@ const int pos_EEPROM_estadoZonas       = 4;
         MENU_SELECT_LIST  tipos_de_zonas[] = { &opc_zona1, &opc_zona2 };
                                           
         MENU_SELECT zona_S1_sel = { &zonaAsigS1,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
-        MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel),pos_EEPROM_zonaAsigS1  };
+        MENU_VALUE zona_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S1_sel),EEPROM_zonaAsigS1  };
         MENU_ITEM item_zona_S1    = { {"Zona Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S1_value) };
 
         MENU_SELECT zona_S2_sel = { &zonaAsigS2,  MENU_SELECT_SIZE(tipos_de_zonas),   MENU_TARGET(&tipos_de_zonas) };
-        MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel), pos_EEPROM_zonaAsigS2  };
+        MENU_VALUE zona_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&zona_S2_sel), EEPROM_zonaAsigS2  };
         MENU_ITEM item_zona_S2    = { {"Zona Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&zona_S2_value) };
        
         
         
         //------Tipos de sensores
         byte tipoS1;
-        const int pos_EEPROM_tipoS1       = 7;
+        const int EEPROM_tipoS1       = 7;
   
         byte tipoS2;
-        const int pos_EEPROM_tipoS2       = 8;
+        const int EEPROM_tipoS2       = 8;
   
         // Lista de tipos de sensores posibles
         MENU_SELECT_ITEM  opc_aper = { 2, {"Apertura"} };
@@ -171,26 +156,26 @@ const int pos_EEPROM_estadoZonas       = 4;
         MENU_SELECT_LIST  tipos_de_sensores[] = { &opc_aper, &opc_mov, &opc_humo };
                                           
         MENU_SELECT tipo_S1_sel = { &tipoS1,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
-        MENU_VALUE tipo_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S1_sel), pos_EEPROM_tipoS1 };
+        MENU_VALUE tipo_S1_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S1_sel), EEPROM_tipoS1 };
         MENU_ITEM item_tipo_S1    = { {"Tipo Sensor 1"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S1_value) };
 
         
         MENU_SELECT tipo_S2_sel = { &tipoS2,  MENU_SELECT_SIZE(tipos_de_sensores),   MENU_TARGET(&tipos_de_sensores) };
-        MENU_VALUE tipo_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S2_sel), pos_EEPROM_tipoS2 };
+        MENU_VALUE tipo_S2_value = { TYPE_SELECT,     0,     0,     MENU_TARGET(&tipo_S2_sel), EEPROM_tipoS2 };
         MENU_ITEM item_tipo_S2    = { {"Tipo Sensor 2"}, ITEM_VALUE,  0,        MENU_TARGET(&tipo_S2_value) };
 
        //-----Estados
        byte estadoSensores=0;
-       const int pos_EEPROM_estadoSensores     = 9;
+       const int EEPROM_estadoSensores     = 9;
   
        //Estado Sensor 1 
        MENU_FLAG    estado_S1_flag    = { 1, &estadoSensores };
-       MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag), pos_EEPROM_estadoSensores };
+       MENU_VALUE   estado_S1_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S1_flag), EEPROM_estadoSensores };
        MENU_ITEM    item_estado_S1    = { {"estado Sensor 1"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S1_value) };
       
       //Estado Sensor 2 
        MENU_FLAG    estado_S2_flag    = { 2, &estadoSensores };
-       MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag), pos_EEPROM_estadoSensores };
+       MENU_VALUE   estado_S2_value   = { TYPE_BFLAG, 0, 0, MENU_TARGET(&estado_S2_flag), EEPROM_estadoSensores };
        MENU_ITEM    item_estado_S2    = { {"estado Sensor 2"}, ITEM_VALUE, 0, MENU_TARGET(&estado_S2_value) };
 
 
@@ -208,15 +193,8 @@ const int pos_EEPROM_estadoZonas       = 4;
        MENU_ITEM menu_sensores     = { {"Sensores"}, ITEM_MENU,   MENU_SIZE(sensores_list),    MENU_TARGET(&sensores_list) };
 
 //--Menu Principal
-
- #ifdef ARMAR
-    MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
- #else
-    MENU_LIST root_list[]   = {   &item_clave, &menu_estado_zonas, &menu_sensores};
- #endif
-
+MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
 MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list),    MENU_TARGET(&root_list) };
-
 
 
 OMMenuMgr Menu(&menu_root);
@@ -279,7 +257,7 @@ OMMenuMgr Menu(&menu_root);
         //---------------------------------------
         void checkPassword(){
           if (password.evaluate()){
-            DEBUG_PRINTLN("Entrando al sistema");
+            Serial.println("Entrando al sistema");
             lcd.clear();
             lcd.print("Password Correcto ");
             lcd.setCursor(0,1);
@@ -288,12 +266,12 @@ OMMenuMgr Menu(&menu_root);
             lcd.clear();
             Menu.enable(true);
             digitalWrite(LEDPIN,HIGH);
-            seconds=120;
+            seconds=20;
             password.reset();
             //Add code to run if it works
           }else{
-            DEBUG_PRINT("Wrong-> ");
-             DEBUG_PRINTLN(password.getGuess());
+            Serial.print("Wrong-> ");
+             Serial.println(password.getGuess());
              password.reset();
              lcd.clear();
              lcd.print("password invalido");
@@ -323,15 +301,15 @@ OMMenuMgr Menu(&menu_root);
     void keypadEvent(KeypadEvent eKey){
           switch (keypad.getState()){
             case PRESSED:
-        	DEBUG_PRINT("Pressed: ");
-        	DEBUG_PRINTLN(eKey);
-                DEBUG_PRINT("Contador: ");DEBUG_PRINTLN(count);
+        	Serial.print("Pressed: ");
+        	Serial.println(eKey);
+                Serial.print("Contador: ");Serial.println(count);
                
                if (!enabledMenu)
                 {
                  
-                  DEBUG_PRINT("Entrando a enabledMenu : ");
-                  DEBUG_PRINT(eKey);
+                  Serial.print("Entrando a enabledMenu : ");
+                  Serial.print(eKey);
         	switch (eKey){
         	  case '*': checkPassword(); break;
         	  case '#': password.reset(); break;
@@ -376,8 +354,9 @@ OMMenuMgr Menu(&menu_root);
           //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
           seconds--;
           if (seconds < -10) seconds=-1;
-          DEBUG_PRINT("second:");     DEBUG_PRINTLN(seconds);
-              {
+             Serial.print("second:");     Serial.println(seconds);
+          if ( seconds == 0 )
+            {
                 Menu.enable(false);
                 enabledMenu = false;
                 sei();
@@ -395,19 +374,16 @@ OMMenuMgr Menu(&menu_root);
 void setup() {
 
   // recupera valores ante una perdida de energia del dispositivo
-   #ifdef ARMAR
-   OMEEPROM::read(pos_EEPROM_estadoAlarma, estadoAlarma); // inicializa estado de la alarma
-   #endif
-
-   OMEEPROM::read(pos_EEPROM_clave, clave); // inicializa contraseña actual alarma
-   OMEEPROM::read(pos_EEPROM_estadoZonas, estadoZonas); // inicializa estado de las zonas
-   OMEEPROM::read(pos_EEPROM_zonaAsigS1, zonaAsigS1); // inicializa zona asignada a sensor 1
-   OMEEPROM::read(pos_EEPROM_zonaAsigS2, zonaAsigS2); // inicializa zona asignada a sensor 2
-   OMEEPROM::read(pos_EEPROM_tipoS1, tipoS1); // inicializa tipo asignado a sensor 1
-   OMEEPROM::read(pos_EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
-   OMEEPROM::read(pos_EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
+   OMEEPROM::read(EEPROM_estadoAlarma, estadoAlarma); // inicializa estado de la alarma
+   OMEEPROM::read(EEPROM_clave, clave); // inicializa contraseña actual alarma
+   OMEEPROM::read(EEPROM_estadoZonas, estadoZonas); // inicializa estado de las zonas
+   OMEEPROM::read(EEPROM_zonaAsigS1, zonaAsigS1); // inicializa zona asignada a sensor 1
+   OMEEPROM::read(EEPROM_zonaAsigS2, zonaAsigS2); // inicializa zona asignada a sensor 2
+   OMEEPROM::read(EEPROM_tipoS1, tipoS1); // inicializa tipo asignado a sensor 1
+   OMEEPROM::read(EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
+   OMEEPROM::read(EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
  
-   seconds=120;
+   seconds=20;
    Serial.begin(9600);  // Used to type in characters
    keypad.addEventListener(keypadEvent); //add an event listener for this keypad
 

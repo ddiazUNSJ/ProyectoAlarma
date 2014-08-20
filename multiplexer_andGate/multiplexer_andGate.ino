@@ -1,13 +1,13 @@
-#define DEBUG 1
+#define MDEBUG 1
 
-#ifdef DEBUG
-  #define DEBUG_PRINT(x)        Serial.print (x)
-  #define DEBUG_PRINTDEC(x)     Serial.print (x, DEC)
-  #define DEBUG_PRINTLN(x)      Serial.println (x)
+#ifdef MDEBUG
+  #define MDEBUG_PRINT(x)        Serial.print (x)
+  #define MDEBUG_PRINTDEC(x)     Serial.print (x, DEC)
+  #define MDEBUG_PRINTLN(x)      Serial.println (x)
 #else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTDEC(x)
-  #define DEBUG_PRINTLN(x) 
+  #define MDEBUG_PRINT(x)
+  #define MDEBUG_PRINTDEC(x)
+  #define MDEBUG_PRINTLN(x) 
 #endif
 
 
@@ -73,7 +73,7 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
      sensorActual=1; // setting scan to sensor 0
      sensorActual=sensorActual<<pin;
      
-    #ifdef DEBUG
+    #ifdef MDEBUG
       sei();
      #endif  
     
@@ -89,22 +89,22 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
 
  
     // salida selPin[2], selPin[1], selPin[0], que son A2,A1,A0
-      DEBUG_PRINT("sensorActual=");DEBUG_PRINTLN(sensorActual);
-      DEBUG_PRINT("sel Multiplexor=");DEBUG_PRINT((pin&4)? "1":"0");DEBUG_PRINT((pin&2)? "1":"0");DEBUG_PRINT((pin&1)? "1":"0");DEBUG_PRINTLN(); 
+      MDEBUG_PRINT("sensorActual=");MDEBUG_PRINTLN(sensorActual);
+      MDEBUG_PRINT("sel Multiplexor=");MDEBUG_PRINT((pin&4)? "1":"0");MDEBUG_PRINT((pin&2)? "1":"0");MDEBUG_PRINT((pin&1)? "1":"0");MDEBUG_PRINTLN(); 
    
     if (digitalRead(muxSignal)==LOW)  
      {
-        DEBUG_PRINT("Señal Activada ");
+        MDEBUG_PRINT("Señal Activada ");
        estadoSensores= sensorActual | estadoSensores; //almacena el estado del sensor actual byte sensores
          digitalWrite(pin13,HIGH);
       }
    
     
     //Imprimir estasensores
-    DEBUG_PRINT("estadosensores=");DEBUG_PRINT((estadoSensores&128)? "1":"0");DEBUG_PRINT((estadoSensores&64)? "1":"0");DEBUG_PRINT((estadoSensores&32)? "1":"0");
-    DEBUG_PRINT((estadoSensores&16)? "1":"0");DEBUG_PRINT((estadoSensores&8)? "1":"0");DEBUG_PRINT((estadoSensores&4)? "1":"0");DEBUG_PRINT((estadoSensores&2)? "1":"0");
-    DEBUG_PRINT((estadoSensores&1)? "1":"0");DEBUG_PRINTLN(); 
-    #ifdef DEBUG
+    MDEBUG_PRINT("estadosensores=");MDEBUG_PRINT((estadoSensores&128)? "1":"0");MDEBUG_PRINT((estadoSensores&64)? "1":"0");MDEBUG_PRINT((estadoSensores&32)? "1":"0");
+    MDEBUG_PRINT((estadoSensores&16)? "1":"0");MDEBUG_PRINT((estadoSensores&8)? "1":"0");MDEBUG_PRINT((estadoSensores&4)? "1":"0");MDEBUG_PRINT((estadoSensores&2)? "1":"0");
+    MDEBUG_PRINT((estadoSensores&1)? "1":"0");MDEBUG_PRINTLN(); 
+    #ifdef MDEBUG
        cli();
     #endif 
   

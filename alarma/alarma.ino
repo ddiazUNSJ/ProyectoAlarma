@@ -19,14 +19,14 @@
 //#define DEBUG;
 #define ARMAR;
 
-#ifdef DEBUG
-  #define DEBUG_PRINT(x)     Serial.print (x)
-  #define DEBUG_PRINTDEC(x)     Serial.print (x, DEC)
-  #define DEBUG_PRINTLN(x)  Serial.println (x)
+#ifdef ADEBUG
+  #define ADEBUG_PRINT(x)     Serial.print (x)
+  #define ADEBUG_PRINTDEC(x)     Serial.print (x, DEC)
+  #define ADEBUG_PRINTLN(x)  Serial.println (x)
 #else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTDEC(x)
-  #define DEBUG_PRINTLN(x) 
+  #define ADEBUG_PRINT(x)
+  #define ADEBUG_PRINTDEC(x)
+  #define ADEBUG_PRINTLN(x) 
 #endif
 
 
@@ -279,7 +279,7 @@ OMMenuMgr Menu(&menu_root);
         //---------------------------------------
         void checkPassword(){
           if (password.evaluate()){
-            DEBUG_PRINTLN("Entrando al sistema");
+            ADEBUG_PRINTLN("Entrando al sistema");
             lcd.clear();
             lcd.print("Password Correcto ");
             lcd.setCursor(0,1);
@@ -292,8 +292,8 @@ OMMenuMgr Menu(&menu_root);
             password.reset();
             //Add code to run if it works
           }else{
-            DEBUG_PRINT("Wrong-> ");
-             DEBUG_PRINTLN(password.getGuess());
+            ADEBUG_PRINT("Wrong-> ");
+             ADEBUG_PRINTLN(password.getGuess());
              password.reset();
              lcd.clear();
              lcd.print("password invalido");
@@ -323,15 +323,15 @@ OMMenuMgr Menu(&menu_root);
     void keypadEvent(KeypadEvent eKey){
           switch (keypad.getState()){
             case PRESSED:
-        	DEBUG_PRINT("Pressed: ");
-        	DEBUG_PRINTLN(eKey);
-                DEBUG_PRINT("Contador: ");DEBUG_PRINTLN(count);
+        	ADEBUG_PRINT("Pressed: ");
+        	ADEBUG_PRINTLN(eKey);
+                ADEBUG_PRINT("Contador: ");ADEBUG_PRINTLN(count);
                
                if (!enabledMenu)
                 {
                  
-                  DEBUG_PRINT("Entrando a enabledMenu : ");
-                  DEBUG_PRINT(eKey);
+                  ADEBUG_PRINT("Entrando a enabledMenu : ");
+                  ADEBUG_PRINT(eKey);
         	switch (eKey){
         	  case '*': checkPassword(); break;
         	  case '#': password.reset(); break;
@@ -376,7 +376,7 @@ OMMenuMgr Menu(&menu_root);
           //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
           seconds--;
           if (seconds < -10) seconds=-1;
-          DEBUG_PRINT("second:");     DEBUG_PRINTLN(seconds);
+          ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
               {
                 Menu.enable(false);
                 enabledMenu = false;

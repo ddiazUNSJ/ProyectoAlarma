@@ -17,8 +17,12 @@
 #include <avr/interrupt.h>
 // #include <MenuBackend.h>
 //#define DEBUG;
-#define ARMAR;
-
+#define MENUTIME 30
+#define DELAY_SIRENA 3
+//#define ARMAR 1
+//#define ADEBUG 1
+#define MDEBUG 1
+// Debug password  keypad  
 #ifdef ADEBUG
   #define ADEBUG_PRINT(x)     Serial.print (x)
   #define ADEBUG_PRINTDEC(x)     Serial.print (x, DEC)
@@ -27,6 +31,17 @@
   #define ADEBUG_PRINT(x)
   #define ADEBUG_PRINTDEC(x)
   #define ADEBUG_PRINTLN(x) 
+#endif
+
+//debug multipler y compuerta and
+#ifdef MDEBUG
+  #define MDEBUG_PRINT(x)        Serial.print (x)
+  #define MDEBUG_PRINTDEC(x)     Serial.print (x, DEC)
+  #define MDEBUG_PRINTLN(x)      Serial.println (x)
+#else
+  #define MDEBUG_PRINT(x)
+  #define MDEBUG_PRINTDEC(x)
+  #define MDEBUG_PRINTLN(x) 
 #endif
 
 
@@ -41,7 +56,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
 //-------------------------------------------------------------------//
  // button values
  // which input is our button
-    const byte BUT_PIN = 14;
+    const byte BUT_PIN = A5;
     
     //basado en  http://forum.arduino.cc/index.php/topic,8558.0.html
       // analog button read values
@@ -52,6 +67,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
     const int BUTINC_VAL  = 838;
     
     const byte BUT_THRESH  = 60;
+    
     
       // mapping of analog button values for menu
     int BUT_MAP[5][2] = {
@@ -263,13 +279,75 @@ OMMenuMgr Menu(&menu_root);
       //  Menu.enable(true);
       //  lcd.clear();
       //}  
+
+ 
+//------------------Activeted Alarm Variables-(Multiplexer  and gate) ---------------------------//
+//----------------------------------------------------------------------------------------------//      
+
+
+int selPin[] = { A0, A1, A2 }; // select pins on 4051 (analog A0, A1, A2), es equivalente a colocar 19,18,20, ojo no va 17 tuve problemas
+int muxSignal = 12;           // arduino pin attached to multiplexer output/input pin
+volatile byte sensoresActivados;
+volatile long lastDebounceTime = 0;   // the last time the interrupt was triggered
+#define debounceDelay 300    // the debounce time in ms; decrease if quick button presses are ignored, increase
+// Arduino Leonardo Interrupts
+#define int2 2//Interrupt 2 attached to digital pin 0
+int pin13=13;
+int interruptLed=A3;
+volatile int tSensorDisparado;
+volatile int tLanzarSirena=DELAY_SIRENA;
+volatile int temporizarMenu;
+volatile int teto;
+
+
+//------------------Activeted Alarm Functions----------------------------//
+//----------------------------------------------------------------------//      
+
+//------ Interrupt Service Routine of activated alarm
+
+void alarmaActivada() //triggers the alarm when an intruder is detected by any  sensor
+{
+  if (temporizarMenu)
+      if ((millis() - lastDebounceTime) > debounceDelay) //delay debounce 
+      {                                                  
+       lastDebounceTime = millis();
+       digitalWrite(pin13,HIGH);
+ 
+       tLanzarSirena=DELAY_SIRENA; // 2 minutos para desactivar alarma
+       tSensorDisparado=0; // comenzando a contar a partir de ahora
+       temporizarMenu=0; // dejar de temporizar menu 
+       // sensor 0 => 0000 0001
+       // sensor 7 => 1000 0000
+       sensoresActivados=0;
+       byte sensorActual;
+        for( int pin = 1; pin < 4 ; pin++)
+         {
+          sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
+          sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
+          digitalWrite(selPin[0], pin & 1); 
+          digitalWrite(selPin[1], pin & 2); 
+          digitalWrite(selPin[2], pin & 4);
+          if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
+          {
+            sensoresActivados= sensorActual | sensoresActivados; //almacena el estado del sensor actual byte sensores
+            }
+ 
+          }
+       }   
+   
+   }
+
+        
+
+
+
 //------------------Password  variables-----------------------------------//
 //----------------------------------------------------------------------//
 
      volatile int seconds;
      volatile int count=0;
      volatile boolean enabledMenu;	
-     #define LEDPIN 13 
+ 
      Password password = Password( "1234" );
 //------------------Password  Functions-----------------------------------//     
         //---------------------------------------
@@ -279,7 +357,7 @@ OMMenuMgr Menu(&menu_root);
         //---------------------------------------
         void checkPassword(){
           if (password.evaluate()){
-            ADEBUG_PRINTLN("Entrando al sistema");
+            ADEBUG_PRINTLN("Entrando al checkPassword");
             lcd.clear();
             lcd.print("Password Correcto ");
             lcd.setCursor(0,1);
@@ -287,10 +365,17 @@ OMMenuMgr Menu(&menu_root);
             enabledMenu = true;
             lcd.clear();
             Menu.enable(true);
-            digitalWrite(LEDPIN,HIGH);
-            seconds=120;
+            seconds=MENUTIME;
             password.reset();
-            //Add code to run if it works
+         
+            // acciones si alarma esta activada   ,     
+            if (temporizarMenu==0) 
+              { temporizarMenu=1; // Volver a temporizar menu
+               digitalWrite(interruptLed, LOW); // Apagar led que indica alarma sonando 
+              //    attachInterrupt(int2,alarmaActivada, LOW);// Armar nuevamente la alarma,             
+             //  interrupts();
+              }
+           
           }else{
             ADEBUG_PRINT("Wrong-> ");
              ADEBUG_PRINTLN(password.getGuess());
@@ -312,16 +397,11 @@ OMMenuMgr Menu(&menu_root);
       {'B','6','5','4'},
       {'C','9','8','7'},
       {'D','#','0','*'}};
-//    byte rowPins[ROWS] = {
-//      5, 4, 3, 2}; //connect used to the row pinouts of the keypad
-//    byte colPins[COLS] = {
-//      9, 8, 7, 6}; // connect to the column pinouts of the keypad
-//    
     byte rowPins[ROWS] = {
-      7, 6, 5, 4}; //connect used to the row pinouts of the keypad
+       7, 6, 5, 4}; //connect used to the row pinouts of the keypad
     byte colPins[COLS] = {
       11, 10, 9, 8}; // connect to the column pinouts of the keypad
-//    
+    
     Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
     
 //------------------Keypad  Functions for validation password-----------------------------------//  
@@ -337,20 +417,31 @@ OMMenuMgr Menu(&menu_root);
                  
                   ADEBUG_PRINT("Entrando a enabledMenu : ");
                   ADEBUG_PRINT(eKey);
-        	switch (eKey){
-        	  case '*': checkPassword(); break;
-        	  case '#': password.reset(); break;
-        	  default: password.append(eKey);
-                 }
-                   if (count==0){ 
-                      lcd.clear();
-                      lcd.print("Menu No Activo");
-                      lcd.setCursor(0,1);
-//                      lcd.setCursor(0,1);
-//                      lcd.print("                ");
-//                      lcd.setCursor(0,1);
-                      }
-                   lcd.print(eKey);
+        	   switch (eKey)
+                   {
+        	    case '*': checkPassword(); break;
+        	    case '#': password.reset(); break;
+        	    default: password.append(eKey);
+                     }
+                  
+                   if (count==0)
+                     {
+                      if (temporizarMenu)
+                        {
+                          lcd.clear();
+                          lcd.print("Menu No Activo");
+                          lcd.setCursor(0,1);
+                         }
+                       if (!temporizarMenu)
+                        {
+                          lcd.clear();
+                          lcd.print("Alarma activada");
+                          lcd.setCursor(0,1);
+                         }
+                      }  
+                   
+                   if (enabledMenu)  {    lcd.print("Enter para continuar");}
+                   else  { lcd.setCursor(count,1);lcd.print(eKey);}
                    count++;
                    if ((count >4)&&(!enabledMenu) ){
                       password.reset();
@@ -364,7 +455,7 @@ OMMenuMgr Menu(&menu_root);
                 else
                  {
                   lcd.clear();
-                  lcd.print("el tiempo corre");
+                  lcd.print("teclado Inactivo");
                   }
             }//Fin de switch
         }
@@ -376,31 +467,21 @@ OMMenuMgr Menu(&menu_root);
 //----------------------------------------------------------------------//        
         
         //------ Interrupt Service Routine used to count the active menu time 
+         //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
         ISR(TIMER1_COMPA_vect)
         {
-          //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
-          seconds--;
-          if (seconds < -10) seconds=-1;
-          ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
-             if ( seconds == 0 )
-       
-              {
-                Menu.enable(false);
-                enabledMenu = false;
-                sei();
-                lcd.clear();
-                lcd.print("Menu No Activo");
-                lcd.setCursor(0,1);
-                lcd.print("Ingrese password");
-                count=0;
-                cli();
-                     
-              }  
+          // Si temporizar menu descontar el tiempo de espera para  deshabilitar menu
+          // Sino contar el tiempo desde que se disparo la alarma debido a un intruso
+         
+                if (temporizarMenu==1) seconds--;
+                if (temporizarMenu==0) {tSensorDisparado++; teto=teto+1; }
          }
-  
         
-void setup() {
-
+ 
+boolean pasa;
+void setup()
+{
+   teto=0;
   // recupera valores ante una perdida de energia del dispositivo
    #ifdef ARMAR
    OMEEPROM::read(pos_EEPROM_estadoAlarma, estadoAlarma); // inicializa estado de la alarma
@@ -414,7 +495,8 @@ void setup() {
    OMEEPROM::read(pos_EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
    OMEEPROM::read(pos_EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
  
-   seconds=120;
+   seconds=MENUTIME;
+   temporizarMenu=1;
    Serial.begin(9600);  // Used to type in characters
    keypad.addEventListener(keypadEvent); //add an event listener for this keypad
 
@@ -439,8 +521,7 @@ void setup() {
     lcd.print("Iniciando");
     delay(1000);
 
-   //------ Interruptions Settings
-        pinMode(LEDPIN, OUTPUT);
+      
      
         // initialize Timer1
         cli();          // disable global interrupts
@@ -470,16 +551,88 @@ void setup() {
   Menu.enable(true); 
   
   
+  //Activation of alarm (Multiplexer  and gate)
+  // Settings
+        // declare signal multiplexer as output:
+     
+        pinMode(muxSignal, INPUT);
+        digitalWrite(muxSignal,LOW);// turn on pullup resistors
+   
+        pinMode(pin13, OUTPUT);
+        
+        // setting multiplexer control pins
+        for(int pin = 0; pin < 3; pin++){ // setup select pins
+          pinMode(selPin[pin], OUTPUT);
+        }
+      
+        // put your setup code here, to run once:
+        pinMode(interruptLed,OUTPUT); // led indicador que la interrupcion ha sido lanzada
+        pinMode(0,INPUT);
+        // digitalWrite(interruptLed,HIGH);
+        tSensorDisparado=0;
+        attachInterrupt(int2,alarmaActivada, LOW);
+        interrupts();
 }
 
 void loop() {
- Menu.checkInput();
- keypad.getKey();
  
+   
+                keypad.getKey();
+                if (temporizarMenu)
+                   {
+                     Menu.checkInput();
+                     ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
+
+                     if ( seconds == 0 )
+                     {
+                      Menu.enable(false);
+                      enabledMenu = false;
+                      lcd.clear();
+                      lcd.print("Menu No Activo");
+                      lcd.setCursor(0,1);
+                      lcd.print("Ingrese password");
+                      count=0;
+                       }
+                    }
+                 else  //Temporizar activar sirena
+                     { 
+                        
+                     if (tSensorDisparado==1)
+                      {
+                        // Imprimir sensor activado
+                        MDEBUG_PRINT("sensoresActivados=");MDEBUG_PRINT((sensoresActivados&128)? "1":"0");MDEBUG_PRINT((sensoresActivados&64)? "1":"0");MDEBUG_PRINT((sensoresActivados&32)? "1":"0");
+                        MDEBUG_PRINT((sensoresActivados&16)? "1":"0");MDEBUG_PRINT((sensoresActivados&8)? "1":"0");MDEBUG_PRINT((sensoresActivados&4)? "1":"0");MDEBUG_PRINT((sensoresActivados&2)? "1":"0");
+                        MDEBUG_PRINT((sensoresActivados&1)? "1":"0");MDEBUG_PRINTLN(); 
+                        // Deshabilitar Menu
+                        Menu.enable(false);
+                        enabledMenu = false;
+                        count=0;
+                        // Mostrar mensaje de alarma activada
+                        lcd.clear();
+                        lcd.print("Alarma activada");
+                        lcd.setCursor(0,1);
+                        lcd.print("Ingrese password");
+                        lcd.setCursor(0,0); //Start at character 4 on line 0
+                        tSensorDisparado++; // salir ya de  este if, se una para no imprimir dos veces lo mismo
+                       }
+                       // tiempo para introducir el password terminado, hacer sonar la sirena
+                     if ( tSensorDisparado == tLanzarSirena )
+                      { 
+                        digitalWrite(pin13,LOW);
+                        MDEBUG_PRINTLN("entrando a enceder led interrup");
+                        delay(1000);
+                        digitalWrite(interruptLed, HIGH); 
+                       }
+                     }
+                    
+                     //a fin de evitar posibles errores por desborde , es decir que regresen a cero las variables
+                       if (seconds < -10) seconds=-1;
+                       if (tSensorDisparado > DELAY_SIRENA+10) tSensorDisparado= DELAY_SIRENA+2;
 }
 
 
+//                      lcd.setCursor(0,1);
+//                      lcd.print("                ");
+//                      lcd.setCursor(0,1);
+    
 
-
-//------ Password Validation Functions
-   

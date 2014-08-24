@@ -209,12 +209,7 @@ const int pos_EEPROM_estadoZonas       = 4;
 
 //--Menu Principal
 
- #ifdef ARMAR
-    MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
- #else
-    MENU_LIST root_list[]   = {   &item_clave, &menu_estado_zonas, &menu_sensores};
- #endif
-
+MENU_LIST root_list[]   = {  &item_armar, &item_clave, &menu_estado_zonas, &menu_sensores};
 MENU_ITEM menu_root     = { {"Root"},        ITEM_MENU,   MENU_SIZE(root_list),    MENU_TARGET(&root_list) };
 
 
@@ -317,6 +312,8 @@ OMMenuMgr Menu(&menu_root);
 //    byte colPins[COLS] = {
 //      9, 8, 7, 6}; // connect to the column pinouts of the keypad
 //    
+
+    
     byte rowPins[ROWS] = {
       7, 6, 5, 4}; //connect used to the row pinouts of the keypad
     byte colPins[COLS] = {

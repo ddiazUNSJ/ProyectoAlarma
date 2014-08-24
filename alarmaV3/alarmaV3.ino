@@ -17,8 +17,11 @@
 #include <avr/interrupt.h>
 // #include <MenuBackend.h>
 //#define DEBUG;
-#define ARMAR;
-
+#define MENUTIME 30
+#define DELAY_SIRENA 3
+//#define ARMAR 1
+//#define ADEBUG 1
+#define MDEBUG 1
 // Debug password  keypad  
 #ifdef ADEBUG
   #define ADEBUG_PRINT(x)     Serial.print (x)
@@ -53,7 +56,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
 //-------------------------------------------------------------------//
  // button values
  // which input is our button
-    const byte BUT_PIN = 14;
+    const byte BUT_PIN = A5;
     
     //basado en  http://forum.arduino.cc/index.php/topic,8558.0.html
       // analog button read values
@@ -64,6 +67,7 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
     const int BUTINC_VAL  = 838;
     
     const byte BUT_THRESH  = 60;
+    
     
       // mapping of analog button values for menu
     int BUT_MAP[5][2] = {
@@ -281,83 +285,154 @@ OMMenuMgr Menu(&menu_root);
 //----------------------------------------------------------------------------------------------//      
 
 
-int selPin[] = { 3, 4, 5 }; // select pins on 4051 (analog A0, A1, A2)
-int muxSignal = 9;           // arduino pin attached to multiplexer output/input pin
-volatile byte estadoSensores=0;
+int selPin[] = { A0, A1, A2 }; // select pins on 4051 (analog A0, A1, A2), es equivalente a colocar 19,18,20, ojo no va 17 tuve problemas
+int muxSignal = 12;           // arduino pin attached to multiplexer output/input pin
+volatile byte sensoresActivados;
 volatile long lastDebounceTime = 0;   // the last time the interrupt was triggered
 #define debounceDelay 300    // the debounce time in ms; decrease if quick button presses are ignored, increase
-#define int1 1//digital pin 2, interrupt 1 , on leonardo config.
+// Arduino Leonardo Interrupts
+#define int2 2//Interrupt 2 attached to digital pin 0
 int pin13=13;
+int interruptLed=A3;
 volatile int tSensorDisparado;
-volatile int tLanzarSirena;
-volatile boolean temporizarMenu;
+volatile int tLanzarSirena=DELAY_SIRENA;
+volatile int temporizarMenu;
+volatile int teto;
+
+
 //------------------Activeted Alarm Functions----------------------------//
 //----------------------------------------------------------------------//      
 
 //------ Interrupt Service Routine of activated alarm
 
 void alarmaActivada() //triggers the alarm when an intruder is detected by any  sensor
-
-  if ((millis() - lastDebounceTime) > debounceDelay) //delay debounce 
-  {                                                  
-    lastDebounceTime = millis();
-    //scanear sensores 1,2 y 3 
-    scanSensor(1,3);
-    tLanzarSirena=0; // 2 minutos para desactivar alarma
-    tSensorDisparado=0; // comenzando a contar a partir de ahora
-    temporizarMenu=false; // dejar de temporizar menu 
-
+{
+  if (temporizarMenu)
+      if ((millis() - lastDebounceTime) > debounceDelay) //delay debounce 
+      {                                                  
+       lastDebounceTime = millis();
+       digitalWrite(pin13,HIGH);
+ 
+       tLanzarSirena=DELAY_SIRENA; // 2 minutos para desactivar alarma
+       tSensorDisparado=0; // comenzando a contar a partir de ahora
+       temporizarMenu=0; // dejar de temporizar menu 
+       
+  
+      
+      // sensor 0 => 0000 0001
+      // sensor 7 => 1000 0000
+      sensoresActivados=0;
+      byte sensorActual;
+       for( int pin = 1; pin < 4 ; pin++)
+        {
+          sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
+          sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
+          digitalWrite(selPin[0], pin & 1); 
+          digitalWrite(selPin[1], pin & 2); 
+          digitalWrite(selPin[2], pin & 4);
+          if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
+          {
+            sensoresActivados= sensorActual | sensoresActivados; //almacena el estado del sensor actual byte sensores
+            }
+ 
+         }
+      }   
+   
    }
-}
+
         
 //------ sensors scan from 0 to 7
-void scanSensor(int nroSensorIni, int nroSensorFin){
-  // sensor 0 => 0000 0001
-  // sensor 7 => 1000 0000
-  estadoSensores=0;
-  
-  byte sensorActual=1; // setting scan  to sensor 0
-    
-  for(byte pin = nroSensorIni; pin < nroSensorFin +1; pin++)
-    { // setup select pins
-    //  delayMicroseconds(10050); 
-     sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
-     sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
-     
-     #ifdef MDEBUG
-        sei();
-     #endif  
-      
-    // control de multiplexer 
-    //enviar 1 o 0 depende del valor del bit en c/u de las posiciones
-     digitalWrite(  selPin[0],bitRead(pin,1));
-     digitalWrite(  selPin[1],bitRead(pin,2));
-     digitalWrite(  selPin[2],bitRead(pin,3));
-    
-     // digitalWrite(selPin[0], pin & 1); 
-     // digitalWrite(selPin[1], pin & 2); 
-     // digitalWrite(selPin[2], pin & 4); 
+byte scanSensor(int nroSensorIni, int nroSensorFin)
+{
+//  // sensor 0 => 0000 0001
+//  // sensor 7 => 1000 0000
+//  sensoresActivados=0;
+//  
+//  byte sensorActual=1; // setting scan  to sensor 0
+//  int pin=1;  
+////  for( pin = nroSensorIni; pin < nroSensorFin +1; pin++)
+//    { // setup select pins
+//    //  delayMicroseconds(10050); 
+//     sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
+//     sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
+//     
+//     
+//    // control de multiplexer 
+//    //enviar 1 o 0 depende del valor del bit en c/u de las posiciones
+////     digitalWrite(  selPin[0],bitRead(pin,1));
+////     digitalWrite(  selPin[1],bitRead(pin,2));
+////     digitalWrite(  selPin[2],bitRead(pin,3));
+////    
+//      digitalWrite(selPin[0], pin & 1); 
+//      digitalWrite(selPin[1], pin & 2); 
+//      digitalWrite(selPin[2], pin & 4); 
+// 
+//    // the selPin[2], selPin[1], selPin[0], are connecting to pins A2,A1,A0 of multiplexer respectivily  
+//     MDEBUG_PRINT("sensorActual=");MDEBUG_PRINTLN(sensorActual);
+//      MDEBUG_PRINT("sel Multiplexor=");MDEBUG_PRINT((pin&4)? "1":"0");MDEBUG_PRINT((pin&2)? "1":"0");MDEBUG_PRINT((pin&1)? "1":"0");MDEBUG_PRINTLN(); 
+//   
+//    if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
+//     {
+//        MDEBUG_PRINT("Signal Activada ");
+//       sensoresActivados= sensorActual | sensoresActivados; //almacena el estado del sensor actual byte sensores
+//      }
+//       
+//    //Imprimir estasensores
+//    MDEBUG_PRINT("sensoresActivados=");MDEBUG_PRINT((sensoresActivados&128)? "1":"0");MDEBUG_PRINT((sensoresActivados&64)? "1":"0");MDEBUG_PRINT((sensoresActivados&32)? "1":"0");
+//    MDEBUG_PRINT((sensoresActivados&16)? "1":"0");MDEBUG_PRINT((sensoresActivados&8)? "1":"0");MDEBUG_PRINT((sensoresActivados&4)? "1":"0");MDEBUG_PRINT((sensoresActivados&2)? "1":"0");
+//    MDEBUG_PRINT((sensoresActivados&1)? "1":"0");MDEBUG_PRINTLN(); 
+// 
  
-    // the selPin[2], selPin[1], selPin[0], are connecting to pins A2,A1,A0 of multiplexer respectivily  
-      MDEBUG_PRINT("sensorActual=");MDEBUG_PRINTLN(sensorActual);
-      MDEBUG_PRINT("sel Multiplexor=");MDEBUG_PRINT((pin&4)? "1":"0");MDEBUG_PRINT((pin&2)? "1":"0");MDEBUG_PRINT((pin&1)? "1":"0");MDEBUG_PRINTLN(); 
-   
-    if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
-     {
-        MDEBUG_PRINT("Señal Activada ");
-       estadoSensores= sensorActual | estadoSensores; //almacena el estado del sensor actual byte sensores
-         digitalWrite(pin13,HIGH);
-      }
+//    }
+MDEBUG_PRINT("nroSensorIni: ");MDEBUG_PRINTLN(nroSensorIni);
+MDEBUG_PRINT("nroSensorFin: ");MDEBUG_PRINTLN(nroSensorFin);
+nroSensorFin++; // usos del for
+int pin;
+// sensor 0 => 0000 0001
+// sensor 7 => 1000 0000
+  sensoresActivados=0;
+  byte sensorActual;
+  int mux=0;
+for( pin = nroSensorIni; pin < nroSensorFin ; pin++)
+    {
+      MDEBUG_PRINT("pin: ");
+      MDEBUG_PRINTLN(pin);
+      sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
+      sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
+ //      digitalWrite(  selPin[0],bitRead(pin,1));
+   //    digitalWrite(  2,bitRead(pin,2));
+//      digitalWrite(selPin[0], (pin&1)? HIGH:LOW);
+//      digitalWrite(selPin[1], (pin&2)? HIGH:LOW); 
+ //      if (pin&4)  digitalWrite(selPin[2], HIGH);
+ //      else  digitalWrite(selPin[2], LOW);
        
-    //Imprimir estasensores
-    MDEBUG_PRINT("estadosensores=");MDEBUG_PRINT((estadoSensores&128)? "1":"0");MDEBUG_PRINT((estadoSensores&64)? "1":"0");MDEBUG_PRINT((estadoSensores&32)? "1":"0");
-    MDEBUG_PRINT((estadoSensores&16)? "1":"0");MDEBUG_PRINT((estadoSensores&8)? "1":"0");MDEBUG_PRINT((estadoSensores&4)? "1":"0");MDEBUG_PRINT((estadoSensores&2)? "1":"0");
-    MDEBUG_PRINT((estadoSensores&1)? "1":"0");MDEBUG_PRINTLN(); 
-    #ifdef MDEBUG
-       cli();
-    #endif 
-  
-    }
+//        digitalWrite(selPin[2], (pin&4)? HIGH:LOW); 
+
+   // digitalWrite(selPin[0], HIGH); 
+   // digitalWrite(selPin[1], HIGH); 
+   // digitalWrite(selPin[2], HIGH); 
+    
+    digitalWrite(selPin[0], pin & 1); 
+    digitalWrite(selPin[1], pin & 2); 
+    digitalWrite(selPin[2], pin & 4);
+    mux=digitalRead(muxSignal);
+     MDEBUG_PRINT("sensorActual=");MDEBUG_PRINTLN(sensorActual);
+     MDEBUG_PRINT("sel Multiplexor=");MDEBUG_PRINT((pin&4)? "1":"0");MDEBUG_PRINT((pin&2)? "1":"0");MDEBUG_PRINT((pin&1)? "1":"0");MDEBUG_PRINTLN(); 
+     MDEBUG_PRINT("mux actual = ");MDEBUG_PRINTLN((mux)? "1":"0");
+      if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
+     {
+        MDEBUG_PRINT("Signal Activada ");
+       sensoresActivados= sensorActual | sensoresActivados; //almacena el estado del sensor actual byte sensores
+      }
+   
+//    //Imprimir estasensores
+    MDEBUG_PRINT("sensoresActivados=");MDEBUG_PRINT((sensoresActivados&128)? "1":"0");MDEBUG_PRINT((sensoresActivados&64)? "1":"0");MDEBUG_PRINT((sensoresActivados&32)? "1":"0");
+    MDEBUG_PRINT((sensoresActivados&16)? "1":"0");MDEBUG_PRINT((sensoresActivados&8)? "1":"0");MDEBUG_PRINT((sensoresActivados&4)? "1":"0");MDEBUG_PRINT((sensoresActivados&2)? "1":"0");
+    MDEBUG_PRINT((sensoresActivados&1)? "1":"0");MDEBUG_PRINTLN(); 
+ }
+   
+      return sensoresActivados;
+}
 
 
 //------------------Password  variables-----------------------------------//
@@ -366,7 +441,7 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
      volatile int seconds;
      volatile int count=0;
      volatile boolean enabledMenu;	
-     #define LEDPIN 13 
+     #define LEDPIN 15 
      Password password = Password( "1234" );
 //------------------Password  Functions-----------------------------------//     
         //---------------------------------------
@@ -382,13 +457,23 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
             lcd.setCursor(0,1);
             lcd.print("Menu operable");
             enabledMenu = true;
-            if (!temporizarMenu)  temporizarMenu=true; // si esta pidiendo password  por alarma activada
             lcd.clear();
             Menu.enable(true);
             digitalWrite(LEDPIN,HIGH);
-            seconds=120;
+            seconds=MENUTIME;
             password.reset();
-            //Add code to run if it works
+         
+            // acciones si alarma esta activada   ,     
+            if (temporizarMenu==0) 
+              { temporizarMenu=1; // Volver a temporizar menu
+               digitalWrite(interruptLed, LOW); // Apagar led que indica alarma sonando 
+                  digitalWrite(selPin[0], LOW); 
+    digitalWrite(selPin[1], LOW); 
+    digitalWrite(selPin[2], LOW);
+           //    attachInterrupt(int2,alarmaActivada, LOW);// Armar nuevamente la alarma,             
+             //  interrupts();
+              }
+           
           }else{
             ADEBUG_PRINT("Wrong-> ");
              ADEBUG_PRINTLN(password.getGuess());
@@ -411,9 +496,9 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
       {'C','9','8','7'},
       {'D','#','0','*'}};
     byte rowPins[ROWS] = {
-      5, 4, 3, 2}; //connect used to the row pinouts of the keypad
+       7, 6, 5, 4}; //connect used to the row pinouts of the keypad
     byte colPins[COLS] = {
-      9, 8, 7, 6}; // connect to the column pinouts of the keypad
+      11, 10, 9, 8}; // connect to the column pinouts of the keypad
     
     Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
     
@@ -443,7 +528,8 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
 //                      lcd.print("                ");
 //                      lcd.setCursor(0,1);
                       }
-                   lcd.print(eKey);
+                  if (enabledMenu)  {    lcd.print("Enter para continuar");}
+                  else  lcd.print(eKey);
                    count++;
                    if ((count >4)&&(!enabledMenu) ){
                       password.reset();
@@ -457,7 +543,7 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
                 else
                  {
                   lcd.clear();
-                  lcd.print("el tiempo corre");
+                  lcd.print("teclado Inactivo");
                   }
             }//Fin de switch
         }
@@ -469,48 +555,21 @@ void scanSensor(int nroSensorIni, int nroSensorFin){
 //----------------------------------------------------------------------//        
         
         //------ Interrupt Service Routine used to count the active menu time 
+         //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
         ISR(TIMER1_COMPA_vect)
         {
-          
+          // Si temporizar menu descontar el tiempo de espera para  deshabilitar menu
+          // Sino contar el tiempo desde que se disparo la alarma debido a un intruso
          
-                if (temporizarMenu)
-                   {
-                    //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
-                    seconds--;
-                    if (seconds < -10) seconds=-1;
-                    ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
-
-                     if ( seconds == 0 )
-                     {
-                      Menu.enable(false);
-                      enabledMenu = false;
-                      sei();
-                      lcd.clear();
-                      lcd.print("Menu No Activo");
-                      lcd.setCursor(0,1);
-                      lcd.print("Ingrese password");
-                      cli();
-                      count=0;
-                       }
-                    }
-                 else  //Temporizar activar sirena
-                     tSensorDisparado++;
-                     if ( tSensorDisparado == tLanzarSirena )
-                      { 
-                        digitalWrite(pin13, HIGH); 
-                        sei();
-                        lcd.clear();
-                        lcd.print("Alarma activada");
-                        lcd.setCursor(0,1);
-                        lcd.print("Ingrese password");
-                        cli();  
-                       }
-              }  
+                if (temporizarMenu==1) seconds--;
+                if (temporizarMenu==0) {tSensorDisparado++; teto=teto+1; }
+         }
         
  
-
-void setup() {
-
+boolean pasa;
+void setup()
+{
+   teto=0;
   // recupera valores ante una perdida de energia del dispositivo
    #ifdef ARMAR
    OMEEPROM::read(pos_EEPROM_estadoAlarma, estadoAlarma); // inicializa estado de la alarma
@@ -524,7 +583,8 @@ void setup() {
    OMEEPROM::read(pos_EEPROM_tipoS2, tipoS2); // inicializa tipo asignado a sensor 2
    OMEEPROM::read(pos_EEPROM_estadoSensores, estadoSensores); // Inicializa el estado actual de sensores, sensor 1 en bit 1, sensor 2 en bit2,...etc
  
-   seconds=120;
+   seconds=MENUTIME;
+   temporizarMenu=1;
    Serial.begin(9600);  // Used to type in characters
    keypad.addEventListener(keypadEvent); //add an event listener for this keypad
 
@@ -551,6 +611,7 @@ void setup() {
 
    //------ Interruptions Settings
         pinMode(LEDPIN, OUTPUT);
+       
      
         // initialize Timer1
         cli();          // disable global interrupts
@@ -583,27 +644,197 @@ void setup() {
   //Activation of alarm (Multiplexer  and gate)
   // Settings
         // declare signal multiplexer as output:
+     
         pinMode(muxSignal, INPUT);
+        digitalWrite(muxSignal,LOW);// turn on pullup resistors
+   
         pinMode(pin13, OUTPUT);
         
         // setting multiplexer control pins
         for(int pin = 0; pin < 3; pin++){ // setup select pins
           pinMode(selPin[pin], OUTPUT);
-        } 
-        
+        }
+      
         // put your setup code here, to run once:
-        attachInterrupt(int1,alarmaActivada, LOW);
+        pinMode(interruptLed,OUTPUT); // led indicador que la interrupcion ha sido lanzada
+        pinMode(0,INPUT);
+      // digitalWrite(interruptLed,HIGH);
+          tSensorDisparado=0;
+        attachInterrupt(int2,alarmaActivada, LOW);
         interrupts();
 }
 
 void loop() {
- Menu.checkInput();
- keypad.getKey();
  
+   
+{ keypad.getKey();
+//  MDEBUG_PRINT("temporizarMenu:"); MDEBUG_PRINTLN(temporizarMenu );
+ 
+                if (temporizarMenu)
+                   {
+                     Menu.checkInput();
+                    ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
+
+                     if ( seconds == 0 )
+                     {
+                      Menu.enable(false);
+                      enabledMenu = false;
+                      lcd.clear();
+                      lcd.print("Menu No Activo");
+                      lcd.setCursor(0,1);
+                      lcd.print("Ingrese password");
+                      count=0;
+                       }
+                    }
+                 else  //Temporizar activar sirena
+                     { 
+                      
+                  
+                  //   MDEBUG_PRINT("tSensorDisparado:");    MDEBUG_PRINTLN(tSensorDisparado);
+                  //    MDEBUG_PRINT("teto:");    MDEBUG_PRINTLN(teto);
+                   
+                    // MDEBUG_PRINT("tLanzarSirena:");    MDEBUG_PRINTLN(tLanzarSirena);
+                     //scanear sensores 1,2 y 3 
+                     
+                     
+                     if (tSensorDisparado==1)
+                      {
+                         MDEBUG_PRINT("sensoresActivados=");MDEBUG_PRINT((sensoresActivados&128)? "1":"0");MDEBUG_PRINT((sensoresActivados&64)? "1":"0");MDEBUG_PRINT((sensoresActivados&32)? "1":"0");
+    MDEBUG_PRINT((sensoresActivados&16)? "1":"0");MDEBUG_PRINT((sensoresActivados&8)? "1":"0");MDEBUG_PRINT((sensoresActivados&4)? "1":"0");MDEBUG_PRINT((sensoresActivados&2)? "1":"0");
+    MDEBUG_PRINT((sensoresActivados&1)? "1":"0");MDEBUG_PRINTLN(); 
+                       // detachInterrupt(int2); // No permitir un nuevo disparo hasta solucionar el actual  
+                       // scanSensor(1,3);
+                        lcd.clear();
+                        lcd.print("Alarma activada");
+                        lcd.setCursor(0,1);
+                        lcd.print("Ingrese password");
+                        lcd.setCursor(0,0); //Start at character 4 on line 0
+                        Menu.enable(false);
+                        enabledMenu = false;
+                        count=0;
+                        tSensorDisparado++;
+                       }
+                       
+                     if ( tSensorDisparado == tLanzarSirena )
+                      { 
+                          digitalWrite(pin13,LOW);
+                        MDEBUG_PRINTLN("entrando a enceder led interrup");
+                        delay(1000);
+                        digitalWrite(interruptLed, HIGH); 
+                        
+                       }
+                     }
+}                    
+                     //a fin de evitar posibles errores por desborde , es decir que regresen a cero las variables
+//                       if (seconds < -10) seconds=-1;
+//                       if (tSensorDisparado > DELAY_SIRENA+10) tSensorDisparado= DELAY_SIRENA+2;
 }
 
 
 
+//if (temporizarMenu==1)
+//                   {
+//                    //http://forums.adafruit.com/viewtopic.php?f=19&t=27089
+//                    seconds--;
+//                    if (seconds < -10) seconds=-1;
+//                    ADEBUG_PRINT("second:");     ADEBUG_PRINTLN(seconds);
+//
+//                     if ( seconds == 0 )
+//                     {
+//                      Menu.enable(false);
+//                      enabledMenu = false;
+//                      sei();
+//                      lcd.clear();
+//                      lcd.print("Menu No Activo");
+//                      lcd.setCursor(0,1);
+//                      lcd.print("Ingrese password");
+//                      cli();
+//                      count=0;
+//                       }
+//                    }
+//                 else  //Temporizar activar sirena
+//                     { 
+//                    
+//                    
+//                       tSensorDisparado++;
+//                      MDEBUG_PRINT("tSensorDisparado:");    MDEBUG_PRINTLN(tSensorDisparado);
+//                        MDEBUG_PRINT("tLanzarSirena:");    MDEBUG_PRINTLN(tLanzarSirena);
+//                     Menu.enable(false);
+//                      enabledMenu = false;
+//                      sei();
+//                        lcd.clear();
+//                        lcd.print("Alarma activada");
+//                        lcd.setCursor(0,1);
+//                        lcd.print("Ingrese password");
+//                        cli();  
+//                     if ( tSensorDisparado == tLanzarSirena )
+//                      { MDEBUG_PRINTLN("entrando a enceder led interrup");
+//                        
+//                        digitalWrite(interruptLed, HIGH); 
+//                        
+//                       }
+//                     }
 
+// if (!temporizarMenu)   MDEBUG_PRINTLN("temporizarMenu en cero");
+//     MDEBUG_PRINTLN("Alarma Disparada");
 //------ Password Validation Functions
+
+////------ sensors scan from 0 to 7
+//byte scanSensor(int nroSensorIni, int nroSensorFin)
+//{
+//  // sensor 0 => 0000 0001
+//  // sensor 7 => 1000 0000
+//  sensoresActivados=0;
+//  
+//  byte sensorActual=1; // setting scan  to sensor 0
+//  int pin=1;  
+////  for( pin = nroSensorIni; pin < nroSensorFin +1; pin++)
+//    { // setup select pins
+//    //  delayMicroseconds(10050); 
+//     sensorActual=1; // setting scan to sensor 0 --> sensorActual=0000 0001
+//     sensorActual=sensorActual<<pin;// setting the first sensor to scan, example if nroSensorIni=4 then  sensorActual=0001 0000
+//     
+//     
+//    // control de multiplexer 
+//    //enviar 1 o 0 depende del valor del bit en c/u de las posiciones
+////     digitalWrite(  selPin[0],bitRead(pin,1));
+////     digitalWrite(  selPin[1],bitRead(pin,2));
+////     digitalWrite(  selPin[2],bitRead(pin,3));
+////    
+//      digitalWrite(selPin[0], pin & 1); 
+//      digitalWrite(selPin[1], pin & 2); 
+//      digitalWrite(selPin[2], pin & 4); 
+// 
+//    // the selPin[2], selPin[1], selPin[0], are connecting to pins A2,A1,A0 of multiplexer respectivily  
+//     MDEBUG_PRINT("sensorActual=");MDEBUG_PRINTLN(sensorActual);
+//      MDEBUG_PRINT("sel Multiplexor=");MDEBUG_PRINT((pin&4)? "1":"0");MDEBUG_PRINT((pin&2)? "1":"0");MDEBUG_PRINT((pin&1)? "1":"0");MDEBUG_PRINTLN(); 
+//   
+//    if (digitalRead(muxSignal)==LOW)  //if actual sensor muxSignal is low 
+//     {
+//        MDEBUG_PRINT("Signal Activada ");
+//       sensoresActivados= sensorActual | sensoresActivados; //almacena el estado del sensor actual byte sensores
+//      }
+//       
+//    //Imprimir estasensores
+//    MDEBUG_PRINT("sensoresActivados=");MDEBUG_PRINT((sensoresActivados&128)? "1":"0");MDEBUG_PRINT((sensoresActivados&64)? "1":"0");MDEBUG_PRINT((sensoresActivados&32)? "1":"0");
+//    MDEBUG_PRINT((sensoresActivados&16)? "1":"0");MDEBUG_PRINT((sensoresActivados&8)? "1":"0");MDEBUG_PRINT((sensoresActivados&4)? "1":"0");MDEBUG_PRINT((sensoresActivados&2)? "1":"0");
+//    MDEBUG_PRINT((sensoresActivados&1)? "1":"0");MDEBUG_PRINTLN(); 
+// 
+// 
+//    }
+//      return sensoresActivados;
+//}
+
+
+
+   // put your main code here, to run repeatedly: 
+ /*    for(int pin = 0; pin < 3; pin++){ // setup select pins
+          digitalWrite(selPin[pin],LOW);
+          Serial.print("pin ");Serial.print(selPin[pin]);  Serial.print(": ");         Serial.println("off");
+          delay(1000);
+          digitalWrite(selPin[pin],HIGH);
+          Serial.print("pin ");Serial.print(selPin[pin]);  Serial.print(": ");         Serial.println("on");
+  
+          delay(1000);
+     }*/
    
